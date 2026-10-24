@@ -1,97 +1,318 @@
-# wrap-ansi [![Build Status](https://travis-ci.org/chalk/wrap-ansi.svg?branch=master)](https://travis-ci.org/chalk/wrap-ansi) [![Coverage Status](https://coveralls.io/repos/github/chalk/wrap-ansi/badge.svg?branch=master)](https://coveralls.io/github/chalk/wrap-ansi?branch=master)
+# uint8array-extras
 
-> Wordwrap a string with [ANSI escape codes](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors_and_Styles)
+> Useful utilities for working with [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) (and [`Buffer`](https://nodejs.org/api/buffer.html))
 
+It's time to [transition from `Buffer` to `Uint8Array`](https://sindresorhus.com/blog/goodbye-nodejs-buffer), and this package helps fill in the gaps.
+
+Note that `Buffer` is a `Uint8Array` subclass, so you can use this package with `Buffer` too.
+
+This package is tree-shakeable and browser-compatible.
+
+This package also includes methods to convert a string to Base64 and back.
+
+Note: In the browser, do not use [`globalThis.atob()`](https://developer.mozilla.org/en-US/docs/Web/API/atob) / [`globalThis.btoa()`](https://developer.mozilla.org/en-US/docs/Web/API/btoa) because they [do not support Unicode](https://developer.mozilla.org/en-US/docs/Glossary/Base64#the_unicode_problem). This package does.
 
 ## Install
 
+```sh
+npm install uint8array-extras
 ```
-$ npm install wrap-ansi
-```
-
 
 ## Usage
 
 ```js
-const chalk = require('chalk');
-const wrapAnsi = require('wrap-ansi');
+import {concatUint8Arrays} from 'uint8array-extras';
 
-const input = 'The quick brown ' + chalk.red('fox jumped over ') +
-	'the lazy ' + chalk.green('dog and then ran away with the unicorn.');
+const a = new Uint8Array([1, 2, 3]);
+const b = new Uint8Array([4, 5, 6]);
 
-console.log(wrapAnsi(input, 20));
+console.log(concatUint8Arrays([a, b]));
+//=> Uint8Array [1, 2, 3, 4, 5, 6]
 ```
-
-<img width="331" src="screenshot.png">
-
 
 ## API
 
-### wrapAnsi(string, columns, options?)
+### `isUint8Array(value: unknown): boolean`
 
-Wrap words to the specified column width.
+Check if the given value is an instance of `Uint8Array`.
 
-#### string
+Replacement for [`Buffer.isBuffer()`](https://nodejs.org/api/buffer.html#static-method-bufferisbufferobj).
 
-Type: `string`
+```js
+import {isUint8Array} from 'uint8array-extras';
 
-String with ANSI escape codes. Like one styled by [`chalk`](https://github.com/chalk/chalk). Newline characters will be normalized to `\n`.
+console.log(isUint8Array(new Uint8Array()));
+//=> true
 
-#### columns
+console.log(isUint8Array(Buffer.from('x')));
+//=> true
 
-Type: `number`
+console.log(isUint8Array(new ArrayBuffer(10)));
+//=> false
+```
 
-Number of columns to wrap the text to.
+### `assertUint8Array(value: unknown)`
 
-#### options
+Throw a `TypeError` if the given value is not an instance of `Uint8Array`.
 
-Type: `object`
+```js
+import {assertUint8Array} from 'uint8array-extras';
 
-##### hard
+try {
+	assertUint8Array(new ArrayBuffer(10)); // Throws a TypeError
+} catch (error) {
+	console.error(error.message);
+}
+```
 
-Type: `boolean`<br>
-Default: `false`
+### `assertUint8ArrayOrArrayBuffer(value: unknown)`
 
-By default the wrap is soft, meaning long words may extend past the column width. Setting this to `true` will make it hard wrap at the column width.
+Throw a `TypeError` if the given value is not an instance of `Uint8Array` or `ArrayBuffer`.
 
-##### wordWrap
+Useful as a guard for functions that accept either a `Uint8Array` or `ArrayBuffer`.
 
-Type: `boolean`<br>
-Default: `true`
+```js
+import {assertUint8ArrayOrArrayBuffer} from 'uint8array-extras';
 
-By default, an attempt is made to split words at spaces, ensuring that they don't extend past the configured columns. If wordWrap is `false`, each column will instead be completely filled splitting words as necessary.
+assertUint8ArrayOrArrayBuffer(new Uint8Array());
+assertUint8ArrayOrArrayBuffer(new ArrayBuffer(8));
+```
 
-##### trim
+### `toUint8Array(value: TypedArray | ArrayBuffer | DataView): Uint8Array`
 
-Type: `boolean`<br>
-Default: `true`
+Convert a value to a `Uint8Array` without copying its data.
 
-Whitespace on all lines is removed by default. Set this option to `false` if you don't want to trim.
+This can be useful for converting a `Buffer` to a pure `Uint8Array`. `Buffer` is already a `Uint8Array` subclass, but [`Buffer` alters some behavior](https://sindresorhus.com/blog/goodbye-nodejs-buffer), so it can be useful to cast it to a pure `Uint8Array` before returning it.
 
+Tip: If you want a copy, just call `.slice()` on the return value.
 
-## Related
+### `concatUint8Arrays(arrays: Array<Uint8Array | ArrayBuffer>, totalLength?: number): Uint8Array`
 
-- [slice-ansi](https://github.com/chalk/slice-ansi) - Slice a string with ANSI escape codes
-- [cli-truncate](https://github.com/sindresorhus/cli-truncate) - Truncate a string to a specific width in the terminal
-- [chalk](https://github.com/chalk/chalk) - Terminal string styling done right
-- [jsesc](https://github.com/mathiasbynens/jsesc) - Generate ASCII-only output from Unicode strings. Useful for creating test fixtures.
+Concatenate the given arrays into a new array.
 
+If `arrays` is empty, it will return a zero-sized `Uint8Array`.
 
-## Maintainers
+If `totalLength` is not specified, it is calculated from summing the lengths of the given arrays.
 
-- [Sindre Sorhus](https://github.com/sindresorhus)
-- [Josh Junon](https://github.com/qix-)
-- [Benjamin Coe](https://github.com/bcoe)
+Replacement for [`Buffer.concat()`](https://nodejs.org/api/buffer.html#static-method-bufferconcatlist-totallength).
 
+```js
+import {concatUint8Arrays} from 'uint8array-extras';
 
----
+const a = new Uint8Array([1, 2, 3]);
+const b = new Uint8Array([4, 5, 6]);
 
-<div align="center">
-	<b>
-		<a href="https://tidelift.com/subscription/pkg/npm-wrap_ansi?utm_source=npm-wrap-ansi&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
-	</b>
-	<br>
-	<sub>
-		Tidelift helps make open source sustainable for maintainers while giving companies<br>assurances about security, maintenance, and licensing for their dependencies.
-	</sub>
-</div>
+console.log(concatUint8Arrays([a, b]));
+//=> Uint8Array [1, 2, 3, 4, 5, 6]
+```
+
+### `areUint8ArraysEqual(a: Uint8Array | ArrayBuffer, b: Uint8Array | ArrayBuffer): boolean`
+
+Check if two arrays are identical by verifying that they contain the same bytes in the same sequence.
+
+Replacement for [`Buffer#equals()`](https://nodejs.org/api/buffer.html#bufequalsotherbuffer).
+
+```js
+import {areUint8ArraysEqual} from 'uint8array-extras';
+
+const a = new Uint8Array([1, 2, 3]);
+const b = new Uint8Array([1, 2, 3]);
+const c = new Uint8Array([4, 5, 6]);
+
+console.log(areUint8ArraysEqual(a, b));
+//=> true
+
+console.log(areUint8ArraysEqual(a, c));
+//=> false
+```
+
+### `compareUint8Arrays(a: Uint8Array | ArrayBuffer, b: Uint8Array | ArrayBuffer): 0 | 1 | -1`
+
+Compare two arrays and indicate their relative order or equality. Useful for sorting.
+
+Replacement for [`Buffer.compare()`](https://nodejs.org/api/buffer.html#static-method-buffercomparebuf1-buf2).
+
+```js
+import {compareUint8Arrays} from 'uint8array-extras';
+
+const array1 = new Uint8Array([1, 2, 3]);
+const array2 = new Uint8Array([4, 5, 6]);
+const array3 = new Uint8Array([7, 8, 9]);
+
+[array3, array1, array2].sort(compareUint8Arrays);
+//=> [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+```
+
+### `uint8ArrayToString(array: Uint8Array | ArrayBuffer, encoding?: string = 'utf8'): string`
+
+Convert a `Uint8Array` to a string.
+
+- Parameter: `encoding` - The [encoding](https://developer.mozilla.org/en-US/docs/Web/API/Encoding_API/Encodings) to convert from.
+
+Replacement for [`Buffer#toString()`](https://nodejs.org/api/buffer.html#buftostringencoding-start-end). For the `encoding` parameter, `latin1` should be used instead of `binary` and `utf-16le` instead of `utf16le`.
+
+```js
+import {uint8ArrayToString} from 'uint8array-extras';
+
+const byteArray = new Uint8Array([72, 101, 108, 108, 111]);
+console.log(uint8ArrayToString(byteArray));
+//=> 'Hello'
+
+const zh = new Uint8Array([167, 65, 166, 110]);
+console.log(uint8ArrayToString(zh, 'big5'));
+//=> '你好'
+
+const ja = new Uint8Array([130, 177, 130, 241, 130, 201, 130, 191, 130, 205]);
+console.log(uint8ArrayToString(ja, 'shift-jis'));
+//=> 'こんにちは'
+```
+
+### `stringToUint8Array(string: string): Uint8Array`
+
+Convert a string to a `Uint8Array` (using UTF-8 encoding).
+
+Replacement for [`Buffer.from('Hello')`](https://nodejs.org/api/buffer.html#static-method-bufferfromstring-encoding).
+
+```js
+import {stringToUint8Array} from 'uint8array-extras';
+
+console.log(stringToUint8Array('Hello'));
+//=> Uint8Array [72, 101, 108, 108, 111]
+```
+
+### `uint8ArrayToBase64(array: Uint8Array | ArrayBuffer, options?: {urlSafe: boolean}): string`
+
+Convert a `Uint8Array` to a Base64-encoded string.
+
+Specify `{urlSafe: true}` to get a [Base64URL](https://base64.guru/standards/base64url)-encoded string.
+
+Replacement for [`Buffer#toString('base64')`](https://nodejs.org/api/buffer.html#buftostringencoding-start-end).
+
+```js
+import {uint8ArrayToBase64} from 'uint8array-extras';
+
+const byteArray = new Uint8Array([72, 101, 108, 108, 111]);
+
+console.log(uint8ArrayToBase64(byteArray));
+//=> 'SGVsbG8='
+```
+
+### `base64ToUint8Array(string: string): Uint8Array`
+
+Convert a Base64-encoded or [Base64URL](https://base64.guru/standards/base64url)-encoded string to a `Uint8Array`.
+
+Accepts Base64URL with or without padding.
+
+Replacement for [`Buffer.from('SGVsbG8=', 'base64')`](https://nodejs.org/api/buffer.html#static-method-bufferfromstring-encoding).
+
+```js
+import {base64ToUint8Array} from 'uint8array-extras';
+
+console.log(base64ToUint8Array('SGVsbG8='));
+//=> Uint8Array [72, 101, 108, 108, 111]
+```
+
+### `stringToBase64(string: string, options?: {urlSafe: boolean}): string`
+
+Encode a string to a Base64-encoded string.
+
+Specify `{urlSafe: true}` to get a [Base64URL](https://base64.guru/standards/base64url)-encoded string.
+
+Replacement for `Buffer.from('Hello').toString('base64')` and [`btoa()`](https://developer.mozilla.org/en-US/docs/Web/API/btoa).
+
+```js
+import {stringToBase64} from 'uint8array-extras';
+
+console.log(stringToBase64('Hello'));
+//=> 'SGVsbG8='
+```
+
+### `base64ToString(base64String: string): string`
+
+Decode a Base64-encoded or [Base64URL](https://base64.guru/standards/base64url)-encoded string to a string.
+
+Accepts Base64URL with or without padding.
+
+Replacement for `Buffer.from('SGVsbG8=', 'base64').toString()` and [`atob()`](https://developer.mozilla.org/en-US/docs/Web/API/atob).
+
+```js
+import {base64ToString} from 'uint8array-extras';
+
+console.log(base64ToString('SGVsbG8='));
+//=> 'Hello'
+```
+
+### `uint8ArrayToHex(array: Uint8Array | ArrayBuffer): string`
+
+Convert a `Uint8Array` to a Hex string.
+
+Replacement for [`Buffer#toString('hex')`](https://nodejs.org/api/buffer.html#buftostringencoding-start-end).
+
+```js
+import {uint8ArrayToHex} from 'uint8array-extras';
+
+const byteArray = new Uint8Array([72, 101, 108, 108, 111]);
+
+console.log(uint8ArrayToHex(byteArray));
+//=> '48656c6c6f'
+```
+
+### `hexToUint8Array(hexString: string): Uint8Array`
+
+Convert a Hex string to a `Uint8Array`.
+
+Replacement for [`Buffer.from('48656c6c6f', 'hex')`](https://nodejs.org/api/buffer.html#static-method-bufferfromstring-encoding).
+
+```js
+import {hexToUint8Array} from 'uint8array-extras';
+
+console.log(hexToUint8Array('48656c6c6f'));
+//=> Uint8Array [72, 101, 108, 108, 111]
+```
+
+### `getUintBE(view: DataView): number`
+
+Read `DataView#byteLength` number of bytes from the given view, up to 48-bit.
+
+Replacement for [`Buffer#readUIntBE`](https://nodejs.org/api/buffer.html#bufreaduintbeoffset-bytelength)
+
+```js
+import {getUintBE} from 'uint8array-extras';
+
+const byteArray = new Uint8Array([0x12, 0x34, 0x56, 0x78, 0x90, 0xab]);
+
+console.log(getUintBE(new DataView(byteArray.buffer)));
+//=> 20015998341291
+```
+
+### `indexOf(array: Uint8Array | ArrayBuffer, value: Uint8Array | ArrayBuffer): number`
+
+Find the index of the first occurrence of the given sequence of bytes (`value`) within the given `Uint8Array` (`array`).
+
+Replacement for [`Buffer#indexOf`](https://nodejs.org/api/buffer.html#bufindexofvalue-byteoffset-encoding). `Uint8Array#indexOf` only takes a number which is different from Buffer's `indexOf` implementation.
+
+```js
+import {indexOf} from 'uint8array-extras';
+
+const byteArray = new Uint8Array([0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef]);
+
+console.log(indexOf(byteArray, new Uint8Array([0x78, 0x90])));
+//=> 3
+```
+
+### `includes(array: Uint8Array | ArrayBuffer, value: Uint8Array | ArrayBuffer): boolean`
+
+Checks if the given sequence of bytes (`value`) is within the given `Uint8Array` (`array`).
+
+Returns true if the value is included, otherwise false.
+
+Replacement for [`Buffer#includes`](https://nodejs.org/api/buffer.html#bufincludesvalue-byteoffset-encoding). `Uint8Array#includes` only takes a number which is different from Buffer's `includes` implementation.
+
+```js
+import {includes} from 'uint8array-extras';
+
+const byteArray = new Uint8Array([0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef]);
+
+console.log(includes(byteArray, new Uint8Array([0x78, 0x90])));
+//=> true
+```
