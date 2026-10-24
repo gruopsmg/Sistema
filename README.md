@@ -1,140 +1,101 @@
-<p align="center">
-  <img width="250" src="/yargs-logo.png">
-</p>
-<h1 align="center"> Yargs </h1>
-<p align="center">
-  <b >Yargs be a node.js library fer hearties tryin' ter parse optstrings</b>
-</p>
+# vary
 
-<br>
-
+[![NPM Version][npm-image]][npm-url]
+[![NPM Downloads][downloads-image]][downloads-url]
+[![Node.js Version][node-version-image]][node-version-url]
 [![Build Status][travis-image]][travis-url]
-[![NPM version][npm-image]][npm-url]
-[![js-standard-style][standard-image]][standard-url]
-[![Coverage][coverage-image]][coverage-url]
-[![Conventional Commits][conventional-commits-image]][conventional-commits-url]
-[![Slack][slack-image]][slack-url]
+[![Test Coverage][coveralls-image]][coveralls-url]
 
-## Description :
-Yargs helps you build interactive command line tools, by parsing arguments and generating an elegant user interface.
-
-It gives you:
-
-* commands and (grouped) options (`my-program.js serve --port=5000`).
-* a dynamically generated help menu based on your arguments.
-
-> <img width="400" src="/screen.png">
-
-* bash-completion shortcuts for commands and options.
-* and [tons more](/docs/api.md).
+Manipulate the HTTP Vary header
 
 ## Installation
 
-Stable version:
-```bash
-npm i yargs
+This is a [Node.js](https://nodejs.org/en/) module available through the
+[npm registry](https://www.npmjs.com/). Installation is done using the
+[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally): 
+
+```sh
+$ npm install vary
 ```
 
-Bleeding edge version with the most recent features:
-```bash
-npm i yargs@next
+## API
+
+<!-- eslint-disable no-unused-vars -->
+
+```js
+var vary = require('vary')
 ```
 
-## Usage :
+### vary(res, field)
 
-### Simple Example
+Adds the given header `field` to the `Vary` response header of `res`.
+This can be a string of a single field, a string of a valid `Vary`
+header, or an array of multiple fields.
 
-```javascript
-#!/usr/bin/env node
-const {argv} = require('yargs')
+This will append the header if not already listed, otherwise leaves
+it listed in the current location.
 
-if (argv.ships > 3 && argv.distance < 53.5) {
-  console.log('Plunder more riffiwobbles!')
-} else {
-  console.log('Retreat from the xupptumblers!')
-}
+<!-- eslint-disable no-undef -->
+
+```js
+// Append "Origin" to the Vary header of the response
+vary(res, 'Origin')
 ```
 
-```bash
-$ ./plunder.js --ships=4 --distance=22
-Plunder more riffiwobbles!
+### vary.append(header, field)
 
-$ ./plunder.js --ships 12 --distance 98.7
-Retreat from the xupptumblers!
+Adds the given header `field` to the `Vary` response header string `header`.
+This can be a string of a single field, a string of a valid `Vary` header,
+or an array of multiple fields.
+
+This will append the header if not already listed, otherwise leaves
+it listed in the current location. The new header string is returned.
+
+<!-- eslint-disable no-undef -->
+
+```js
+// Get header string appending "Origin" to "Accept, User-Agent"
+vary.append('Accept, User-Agent', 'Origin')
 ```
 
-### Complex Example
+## Examples
 
-```javascript
-#!/usr/bin/env node
-require('yargs') // eslint-disable-line
-  .command('serve [port]', 'start the server', (yargs) => {
-    yargs
-      .positional('port', {
-        describe: 'port to bind on',
-        default: 5000
-      })
-  }, (argv) => {
-    if (argv.verbose) console.info(`start server on :${argv.port}`)
-    serve(argv.port)
-  })
-  .option('verbose', {
-    alias: 'v',
-    type: 'boolean',
-    description: 'Run with verbose logging'
-  })
-  .argv
+### Updating the Vary header when content is based on it
+
+```js
+var http = require('http')
+var vary = require('vary')
+
+http.createServer(function onRequest (req, res) {
+  // about to user-agent sniff
+  vary(res, 'User-Agent')
+
+  var ua = req.headers['user-agent'] || ''
+  var isMobile = /mobi|android|touch|mini/i.test(ua)
+
+  // serve site, depending on isMobile
+  res.setHeader('Content-Type', 'text/html')
+  res.end('You are (probably) ' + (isMobile ? '' : 'not ') + 'a mobile user')
+})
 ```
 
-Run the example above with `--help` to see the help for the application.
+## Testing
 
-## TypeScript
-
-yargs has type definitions at [@types/yargs][type-definitions].
-
-```
-npm i @types/yargs --save-dev
+```sh
+$ npm test
 ```
 
-See usage examples in [docs](/docs/typescript.md).
+## License
 
-## Webpack
+[MIT](LICENSE)
 
-See usage examples of yargs with webpack in [docs](/docs/webpack.md).
-
-## Community :
-
-Having problems? want to contribute? join our [community slack](http://devtoolscommunity.herokuapp.com).
-
-## Documentation :
-
-### Table of Contents
-
-* [Yargs' API](/docs/api.md)
-* [Examples](/docs/examples.md)
-* [Parsing Tricks](/docs/tricks.md)
-  * [Stop the Parser](/docs/tricks.md#stop)
-  * [Negating Boolean Arguments](/docs/tricks.md#negate)
-  * [Numbers](/docs/tricks.md#numbers)
-  * [Arrays](/docs/tricks.md#arrays)
-  * [Objects](/docs/tricks.md#objects)
-  * [Quotes](/docs/tricks.md#quotes)
-* [Advanced Topics](/docs/advanced.md)
-  * [Composing Your App Using Commands](/docs/advanced.md#commands)
-  * [Building Configurable CLI Apps](/docs/advanced.md#configuration)
-  * [Customizing Yargs' Parser](/docs/advanced.md#customizing)
-* [Contributing](/contributing.md)
-
-[travis-url]: https://travis-ci.org/yargs/yargs
-[travis-image]: https://img.shields.io/travis/yargs/yargs/master.svg
-[npm-url]: https://www.npmjs.com/package/yargs
-[npm-image]: https://img.shields.io/npm/v/yargs.svg
-[standard-image]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg
-[standard-url]: http://standardjs.com/
-[conventional-commits-image]: https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg
-[conventional-commits-url]: https://conventionalcommits.org/
-[slack-image]: http://devtoolscommunity.herokuapp.com/badge.svg
-[slack-url]: http://devtoolscommunity.herokuapp.com
-[type-definitions]: https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/yargs
-[coverage-image]: https://img.shields.io/nycrc/yargs/yargs
-[coverage-url]: https://github.com/yargs/yargs/blob/master/.nycrc
+[npm-image]: https://img.shields.io/npm/v/vary.svg
+[npm-url]: https://npmjs.org/package/vary
+[node-version-image]: https://img.shields.io/node/v/vary.svg
+[node-version-url]: https://nodejs.org/en/download
+[travis-image]: https://img.shields.io/travis/jshttp/vary/master.svg
+[travis-url]: https://travis-ci.org/jshttp/vary
+[coveralls-image]: https://img.shields.io/coveralls/jshttp/vary/master.svg
+[coveralls-url]: https://coveralls.io/r/jshttp/vary
+[downloads-image]: https://img.shields.io/npm/dm/vary.svg
+[downloads-url]: https://npmjs.org/package/vary
