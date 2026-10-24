@@ -1,9 +1,4 @@
-CONTRIBUTING.md
-Makefile
-docs/
-examples/
-reports/
+scripts/
 test/
 
-.jshintrc
-.travis.yml
+!lib/mapping_table.json
